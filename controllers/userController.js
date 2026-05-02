@@ -1,73 +1,122 @@
-const users = require('../data/users');
+const User = require('../models/User');
 
-exports.getUsers = (req,res) =>{
-    res.status(200).json({
-        success: true,
-        data: users
-    });
-};
-exports.getUserById = (req,res) =>{
-    const id= parseInt(req.params.id);
-    const user = users.find(u => u.id === id);
-    if(!user){
-        return res.status(404).json({
-            success: false,
-            message:'User not found'});
-    }
-    res.status(200).json({
-        success: true,
-        data: user
-    });
-};
-exports.createUser = (req,res) => {
-    const { name, role } = req.body;
+exports.getUsers = async (req, res) => {
+    try {
+        const users = await User.find();
 
-    if(!name || !role){
-        return res.status(400).json({
-            success: false,
-            message: 'Name and Role are required!!'});
-    }
-    const newUser ={
-        id: users.length ? users[users.length - 1].id +1:1,
-        name,
-        role
-    };
-    users.push(newUser);
-    res.status(201).json({
-        success: true,
-        data:newUser
-    });
-};
-exports.updateUser = (req,res) => {
-    const id = parseInt(req.params.id);
-    const { name, role } = req.body;
+        res.status(200).json({
+            success: true,
+            data: users
+        });
 
-    const user= users.find(u => u.id === id);
-    if(!user){
-        return res.status(404).json({
+    } catch (error) {
+        res.status(500).json({
             success: false,
-            message: 'User not found!'});
+            message: error.message
+        });
     }
-    if(name) user.name = name;
-    if(role) user.role = role;
-    res.status(200).json({
-        success: true,
-        data: user
-    });
 };
-exports.deleteUser = (req,res) => {
-    const id = parseInt(req.params.id);
-    const index = users.findIndex(u => u.id === id);
+exports.getUserById = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
 
-    if(index === -1){
-        return res.status(404).json({
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+        res.status(500).json({
             success: false,
-            message: 'User not found!'});
+            message: error.message
+        });
     }
-    users.splice(index, 1);
-    res.status(200).json({
-        success: true,
-        data: 'User deleted successfully'});
+};
+exports.createUser = async (req, res) => {
+    try {
+        const { name, role } = req.body;
+
+        // validation
+        if (!name || !role) {
+            return res.status(400).json({
+                success: false,
+                message: "Name and role are required"
+            });
+        }
+
+        // save to MongoDB
+        const user = await User.create({ name, role });
+
+        res.status(201).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+exports.updateUser = async (req, res) => {
+    try {
+        const { name, role } = req.body;
+
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { name, role },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "User deleted successfully"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 };
 exports.searchUsers= (req,res) => {
     const name= req.query.name;
