@@ -118,15 +118,31 @@ exports.deleteUser = async (req, res) => {
         });
     }
 };
-exports.searchUsers= (req,res) => {
-    const name= req.query.name;
-    if(!name) {
-        return res.status(400).json({
+exports.searchUsers = async (req, res) => {
+    try {
+
+        const { name } = req.query;
+
+        if (!name) {
+            return res.status(400).json({
+                success: false,
+                message: "Name query is required"
+            });
+        }
+
+        const users = await User.find({
+            name: { $regex: name, $options: 'i' }
+        });
+
+        res.status(200).json({
+            success: true,
+            data: users
+        });
+
+    } catch (error) {
+        res.status(500).json({
             success: false,
-            message: 'Name query is required'});
+            message: error.message
+        });
     }
-    const result = users.filter(u => u.name.toLowerCase().includes(name.toLowerCase()));
-    res.status(200).json({
-        success: true,
-        data: result});
 };
